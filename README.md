@@ -90,7 +90,8 @@ strong version 94.95, `product-strategy` scores them 89.44 and 93.69, and
 
 ## Installation
 
-Lingity is not yet published to a package index, so install it from a clone.
+Install a reviewed checkout rather than assuming that a package-index release
+with the same version contains this source.
 Three commands are required, and the second and third are not optional:
 
 ```text
@@ -110,6 +111,42 @@ Skipping either step does not degrade an analysis quietly. The model loader
 requires exactly the pinned version and raises `LinguisticModelError` on any
 other, and canonicalization raises `WordNetDataError` when the corpus is
 absent. Both name the command that fixes them.
+
+## Security and acceptance boundaries
+
+Run untrusted documents through a non-editable installation in an isolated
+environment. Keep the executable, profiles, baseline snapshots, and output
+directories outside repository control. Use absolute executable paths and
+argument arrays rather than interpolating document paths into shell commands.
+The optional API providers send document content to their configured service;
+use local analysis and the `subagent` provider when that is not authorized.
+
+Analyzer 1.6.0 no longer excludes `use`, `propose`, or `treat` claims. Earlier
+versions could compare "The board must use the framework" and "The board must
+use the database" as equivalent. Complements and restrictive modifiers must
+also survive extraction. Some previously accepted paraphrases now fail because
+their equivalence cannot be established. Retaining the disputed clause while
+improving the surrounding prose is preferable to ignoring it.
+
+An exit code of zero from `analyze` or `verify` does not mean that a document
+meets an authoring standard. `judge` requires relative improvement, not an
+absolute minimum score. An authoring gate must separately enforce its chosen
+score, severity, coverage, and source-authorization policy. Naming an actor
+that the source left unspecified is reported under `protected_delta.specified`;
+the host must establish that the assignment is authorized.
+
+The dependency floors exclude the NLTK downloader vulnerability
+CVE-2025-14009, setuptools CVE-2025-47273, and pytest CVE-2025-71176.
+NLTK 3.10.3 still has the unpatched model-artifact sandbox advisory
+[GHSA-8mgp-746c-j5xp](https://osv.dev/vulnerability/GHSA-8mgp-746c-j5xp).
+Lingity uses WordNet, not those model import/export APIs, and does not rely on
+NLTK's path sandbox for containment. This is an applicability assessment, not
+a clean dependency scan or a claim that NLTK is vulnerability-free. Audit the
+resolved dependency set before deployment.
+
+The [Windows specification-authoring gate design](docs/specification-authoring-gate.md)
+defines absolute acceptance criteria, autonomous repair, last-resort user
+options, and the limits of machine-wide hook enforcement.
 
 ## CLI
 
@@ -246,7 +283,7 @@ restore them by name instead of guessing:
 ```text
 $ lingity judge source.txt --candidate shorter.txt
 accepted False   70.46 -> 89.50
-  reason: protected meaning is changed: 9 protected element(s) dropped
+  reason: protected meaning is changed: 11 protected element(s) dropped
   MISSING quantity:count:2
   MISSING governance:term:ratify
   MISSING order:sequence:earlier=require closure evidence govern recommendation;later=target architecture return human decision

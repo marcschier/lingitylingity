@@ -148,6 +148,78 @@ def test_regression_is_rejected(profile: Profile) -> None:
     assert any("regressed" in reason for reason in reasons)
 
 
+def test_higher_scoring_use_target_swap_is_rejected(profile: Profile) -> None:
+    source = "The board must use the framework in order to verify the report."
+    candidate = "The board must use the database to verify the report."
+    accepted, reasons, evidence = judge_candidate(source, candidate, profile)
+    assert cast(float, evidence["candidate_score"]) > cast(float, evidence["source_score"])
+    assert accepted is False
+    assert evidence["protected_disposition"] == "changed"
+    assert any("protected meaning is changed" in reason for reason in reasons)
+    delta = cast(dict[str, list[str]], evidence["protected_delta"])
+    assert any("framework" in signature for signature in delta["missing"])
+    assert any("database" in signature for signature in delta["added"])
+
+
+def test_linguistic_improvement_cannot_drop_material_predicates(
+    profile: Profile,
+) -> None:
+    data = cast(dict[str, str], json.loads(FIXTURE.read_text(encoding="utf-8")))
+    accepted, reasons, evidence = judge_candidate(
+        data["original"], data["unchecked_linguistic_rewrite"], profile
+    )
+    assert cast(float, evidence["candidate_score"]) > cast(float, evidence["source_score"])
+    assert accepted is False
+    assert evidence["protected_disposition"] == "changed"
+    assert any("protected meaning is changed" in reason for reason in reasons)
+
+
+@pytest.mark.parametrize(
+    ("source", "candidate", "bound_action"),
+    [
+        (
+            "The board must propose reviewing the framework, "
+            "and the board must reject reviewing the database.",
+            "The board must propose reviewing the database. "
+            "The board must reject reviewing the framework.",
+            "propose",
+        ),
+        (
+            "The board must propose (briefly; clearly) to review the framework, "
+            "and the board must refuse (briefly; clearly) to review the database.",
+            "The board must propose (briefly; clearly) to review the database. "
+            "The board must refuse (briefly; clearly) to review the framework.",
+            "propose",
+        ),
+        (
+            'The board must propose "briefly; clearly" to review the framework, '
+            'and the board must refuse "briefly; clearly" to review the database.',
+            'The board must propose "briefly; clearly" to review the database. '
+            'The board must refuse "briefly; clearly" to review the framework.',
+            "review",
+        ),
+    ],
+    ids=["gerund", "parenthetical-semicolon", "quoted-semicolon"],
+)
+def test_higher_scoring_parent_complement_swap_is_rejected(
+    profile: Profile, source: str, candidate: str, bound_action: str
+) -> None:
+    accepted, reasons, evidence = judge_candidate(source, candidate, profile)
+    assert cast(float, evidence["candidate_score"]) > cast(float, evidence["source_score"])
+    assert accepted is False
+    assert evidence["protected_disposition"] == "changed"
+    assert any("protected meaning is changed" in reason for reason in reasons)
+    delta = cast(dict[str, list[str]], evidence["protected_delta"])
+    assert any(
+        f"action={bound_action};" in signature and "framework" in signature
+        for signature in delta["missing"]
+    )
+    assert any(
+        f"action={bound_action};" in signature and "database" in signature
+        for signature in delta["added"]
+    )
+
+
 def test_rejected_candidate_names_the_elements_that_moved(profile: Profile) -> None:
     """A rejection has to be actionable, not just a refusal.
 

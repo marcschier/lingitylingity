@@ -236,7 +236,7 @@ def test_negative_coordination_preserves_each_claim(
     )
 
 
-def test_explicit_and_do_not_cutover_rewrite_matches_canonical_original(
+def test_rewrite_cannot_drop_a_proposal_or_substitute_treat_for_use(
     recommendation_fixture: dict[str, str],
 ) -> None:
     rewrite = (
@@ -247,7 +247,8 @@ def test_explicit_and_do_not_cutover_rewrite_matches_canonical_original(
         "Require closure evidence for the governed recommendations before a target architecture returns for human decision."
     )
     comparison = _comparison(recommendation_fixture["original"], rewrite)
-    assert comparison["equivalent"] is True
+    assert comparison["equivalent"] is False
+    assert comparison["disposition"] == "changed"
 
 
 def test_approving_and_beginning_cutover_remains_rejected(
@@ -952,17 +953,6 @@ def test_a_possession_is_extracted_as_a_claim() -> None:
     ], claims
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "`use` is still in NON_CLAIM_VERB_LEMMAS, so its actor and target are "
-        "never compared and this swap is certified. It cannot be removed until "
-        "target normalization equates the canonical fixture's "
-        "'repository-evidenced hybrid topology' with 'hybrid topology "
-        "evidenced in the repository'; removing it today rejects the canonical "
-        "rewrite. Pinned strictly so the fix forces this win into the open."
-    ),
-)
 def test_a_use_claim_protects_its_target() -> None:
     assert (
         _comparison(
@@ -970,6 +960,92 @@ def test_a_use_claim_protects_its_target() -> None:
         )["equivalent"]
         is False
     )
+
+
+@pytest.mark.parametrize("verb", ["use", "propose", "treat"])
+@pytest.mark.parametrize(
+    "candidate",
+    [
+        "The board must {verb} the database.",
+        "The vendor must {verb} the framework.",
+    ],
+)
+def test_material_predicates_protect_actor_and_target(
+    verb: str, candidate: str
+) -> None:
+    source = f"The board must {verb} the framework."
+    comparison = _comparison(source, candidate.format(verb=verb))
+    assert comparison["equivalent"] is False
+    assert comparison["disposition"] == "changed"
+    assert any(
+        signature.startswith("claim:")
+        for signature in cast(list[str], comparison["missing"])
+    )
+    assert any(
+        signature.startswith("claim:")
+        for signature in cast(list[str], comparison["added"])
+    )
+
+
+@pytest.mark.parametrize(
+    ("source", "candidate"),
+    [
+        (
+            "The board must use the framework as a provisional baseline.",
+            "The board must use the framework as a provisional specification.",
+        ),
+        (
+            "The board must propose reviewing the framework.",
+            "The board must propose reviewing the database.",
+        ),
+        (
+            "The board must treat the framework as a provisional baseline.",
+            "The board must treat the framework as a provisional specification.",
+        ),
+        (
+            "The board must propose synthesizing the framework.",
+            "The board must propose synthesizing the database.",
+        ),
+    ],
+)
+def test_material_predicates_protect_complements(
+    source: str, candidate: str
+) -> None:
+    assert _comparison(source, candidate)["equivalent"] is False
+
+
+def test_parent_complement_bindings_preserve_sentence_splits() -> None:
+    source = (
+        "The board must propose reviewing the framework, "
+        "and the board must reject reviewing the database."
+    )
+    candidate = (
+        "The board must propose reviewing the framework. "
+        "The board must reject reviewing the database."
+    )
+    assert _comparison(source, candidate)["equivalent"] is True
+
+
+def test_parenthetical_comma_does_not_unbind_an_infinitive() -> None:
+    source = (
+        "The board must propose, after the audit, to review the framework, "
+        "and the board must reject reviewing the database."
+    )
+    candidate = (
+        "The board must propose, after the audit, to review the database. "
+        "The board must reject reviewing the framework."
+    )
+    assert _comparison(source, candidate)["equivalent"] is False
+
+
+def test_use_target_does_not_silently_drop_participial_evidence() -> None:
+    source = "Use the repository-evidenced hybrid topology."
+    candidate = "Use the hybrid topology evidenced in the repository."
+    assert _comparison(source, candidate)["equivalent"] is False
+    assert _comparison(
+        source, "Use the hybrid topology evidenced in the database."
+    )["equivalent"] is False
+    assert _comparison(source, "Use the hybrid topology.")["equivalent"] is False
 
 
 def test_protected_delta_names_signatures_the_manifests_actually_store() -> None:

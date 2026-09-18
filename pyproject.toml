@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = ["setuptools>=78.1.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,8 +10,8 @@ readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "phrocker" }]
 # PEP 639 SPDX expression rather than the legacy free-text field, which is
-# deprecated and which PyPI no longer renders. This form needs setuptools>=77,
-# which the build-system requirement above pins. It also forbids a
+# deprecated and which PyPI no longer renders. This form needs setuptools>=77;
+# the higher build floor also excludes CVE-2025-47273. It forbids a
 # `License :: ...` classifier: declaring both is an error, not a duplication,
 # so the classifier list below deliberately carries none.
 license = "Apache-2.0"
@@ -41,7 +41,7 @@ classifiers = [
 dependencies = [
   "jsonschema>=4.23,<5",
   "markdown-it-py>=3,<4",
-  "nltk>=3.9,<4",
+  "nltk>=3.9.3,<4",
   "spacy>=3.8,<3.9",
 ]
 
@@ -53,7 +53,7 @@ Issues = "https://github.com/phrocker/lingitylingity/issues"
 [project.optional-dependencies]
 dev = [
   "mypy>=1.13,<2",
-  "pytest>=8.3,<9",
+  "pytest>=9.0.3,<10",
   # The canonical Trove classifier list, used by tests/test_documentation.py to
   # answer locally a question PyPI otherwise answers only at upload.
   "trove-classifiers>=2024.10.0",

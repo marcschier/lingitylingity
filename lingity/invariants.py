@@ -146,31 +146,6 @@ ACTION_NORMALIZATION = {
     "verify": "verify",
 }
 CLAIM_ACTION_LEMMAS = frozenset(ACTION_NORMALIZATION)
-# Verbs whose claims are dropped before the signature is built. Every entry
-# here is a hole in the gate: the actor and the target of that verb stop being
-# compared, so a rewrite may swap either one and still be certified.
-#
-# "be", "do" and "have" were removed after measuring that they cost nothing --
-# `_is_claim_predicate` already requires pos == "VERB", which excludes the
-# auxiliary readings those lemmas were meant to suppress, so the entries only
-# silenced the main-verb readings that do carry content ("the team must have
-# the credentials").
-#
-# The three that remain are load-bearing, for three different reasons, and
-# each is held by a different kind of test:
-#   use     -- the fixture rewrite reorders a modifier, and target
-#              normalization cannot yet equate "repository-evidenced hybrid
-#              topology" with "hybrid topology evidenced in the repository".
-#              Held by a strict xfail that certifies a target swap, so the
-#              day normalization improves the test forces the win open.
-#   propose -- "Propose deferring X" states its content in an xcomp, which
-#              `_target_tokens` does not read, so the claim would carry
-#              target=none. The deferral inside is already extracted on its
-#              own, so the entry only adds a contentless element that the
-#              rewrite has no counterpart for. Held by the canonical fixture.
-#   treat   -- held by test_explicit_and_do_not_cutover_rewrite_matches_
-#              canonical_original.
-NON_CLAIM_VERB_LEMMAS = {"propose", "treat", "use"}
 GOVERNANCE_LEMMAS = {
     "applicability",
     "approval",
@@ -729,9 +704,44 @@ def _object_root(document: Document, predicate: Token) -> Token | None:
     return None
 
 
+def _is_separate_clause(
+    document: Document, predicate: Token, child: Token
+) -> bool:
+    if not _is_claim_predicate(document, child):
+        return False
+    if any(
+        token.dep == "mark" or (token.lower == "to" and token.dep == "aux")
+        for token in document.children(child)
+    ):
+        return False
+    # Do not infer independent clauses from punctuation in grouped or quoted
+    # text. Keeping the binding is conservative when its scope is uncertain.
+    if any(character in document.text for character in "()[]{}\"'“”‘’`"):
+        return False
+    low, high = sorted((predicate.index, child.index))
+    separators = {token.text for token in document if low < token.index < high}
+    if ";" in separators:
+        return True
+    return (
+        "," in separators
+        and child.tag in {"VB", "VBP"}
+        and not _subject_tokens(document, child)
+    )
+
+
 def _target_tokens(document: Document, predicate: Token) -> list[Token]:
     root = _object_root(document, predicate)
-    if root is None:
+    roots = [root] if root is not None else []
+    roots.extend(
+        child
+        for child in document.children(predicate)
+        if child.dep == "prep"
+        or (
+            child.dep in {"xcomp", "ccomp", "advcl"}
+            and not _is_separate_clause(document, predicate, child)
+        )
+    )
+    if not roots:
         return []
     # An ordering clause is dropped only when _ordering_relations reports it, so
     # the content is represented as an order:sequence rather than lost. Trailing
@@ -741,20 +751,18 @@ def _target_tokens(document: Document, predicate: Token) -> list[Token]:
     ordered_away = {
         index for relation in _ordering_relations(document) for index in relation.owned
     }
-    # Material belonging to a nested clause is excluded so that targets do not
-    # swallow the rest of the sentence. The predicate's own object is never
-    # nested material, though: when a discourse label makes the predicate
-    # itself an "acl", excluding its object would erase what the directive is
-    # about.
+    # A separately extracted complement still belongs to its parent: proposing
+    # one review and rejecting another must not equal the converse. Only
+    # punctuation-separated independent clauses are represented on their own.
+    tokens = {
+        token.index: token
+        for argument in roots
+        for token in document.subtree(argument)
+    }
     return _content_tokens(
         token
-        for token in document.subtree(root)
-        if token.dep not in {"acl", "advcl", "relcl"}
-        and token.index not in ordered_away
-        and (
-            document.head_of(token).index == predicate.index
-            or document.head_of(token).dep not in {"acl", "advcl", "relcl"}
-        )
+        for token in tokens.values()
+        if token.index not in ordered_away
     )
 
 
@@ -1047,7 +1055,7 @@ def _own_deferral_marker(document: Document, predicate: Token) -> bool:
 
 
 def _is_claim_predicate(document: Document, token: Token) -> bool:
-    if token.pos != "VERB" or token.lemma in NON_CLAIM_VERB_LEMMAS:
+    if token.pos != "VERB":
         return False
     if token.lemma in CLAIM_ACTION_LEMMAS:
         return True

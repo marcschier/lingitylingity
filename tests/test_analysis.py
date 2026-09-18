@@ -47,7 +47,7 @@ def test_rewrite_scores_better_and_reduces_findings(
     recommendation_fixture: dict[str, str],
 ) -> None:
     original = analyze_text(recommendation_fixture["original"])
-    rewrite = analyze_text(recommendation_fixture["rewrite"])
+    rewrite = analyze_text(recommendation_fixture["unchecked_linguistic_rewrite"])
     original_score = cast(dict[str, JsonValue], original["score"])["value"]
     rewrite_score = cast(dict[str, JsonValue], rewrite["score"])["value"]
     assert isinstance(original_score, float)
