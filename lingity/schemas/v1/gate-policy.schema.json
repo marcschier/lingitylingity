@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lingity.dev/schemas/v1/gate-policy.schema.json",
+  "title": "Lingity authoring gate policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile", "profile_version", "profile_digest", "minimum_document_hri", "minimum_block_hri", "reject_high_severity", "reject_specified_owners", "require_relative_improvement", "max_input_bytes", "max_units", "max_feedback_items", "max_feedback_chars"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "profile": {"const": "architecture-review"},
+    "profile_version": {"const": "1.3.0"},
+    "profile_digest": {"const": "92b2032db19672b09990484750bcc03e07d5b8ef9b8cecfaee59de2be912f9a9"},
+    "minimum_document_hri": {"type": "number", "minimum": 85, "maximum": 100},
+    "minimum_block_hri": {"type": "number", "minimum": 85, "maximum": 100},
+    "reject_high_severity": {"const": true},
+    "reject_specified_owners": {"const": true},
+    "require_relative_improvement": {"const": true},
+    "max_input_bytes": {"type": "integer", "minimum": 1, "maximum": 32768},
+    "max_units": {"type": "integer", "minimum": 1, "maximum": 256},
+    "max_feedback_items": {"type": "integer", "minimum": 1, "maximum": 64},
+    "max_feedback_chars": {"type": "integer", "minimum": 32, "maximum": 240}
+  }
+}

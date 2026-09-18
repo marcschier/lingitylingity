@@ -1,0 +1,43 @@
+{
+  "host_version": "1.0.85",
+  "surface": "Windows CLI command hooks, camelCase",
+  "observations": {
+    "initial_prompt_precedes_session_start": true,
+    "resume_retains_session_id": true,
+    "stop_continuation_emits_user_prompt": true,
+    "stop_continuation_prompt_equals_reason": true,
+    "autopilot_continuation_emits_user_prompt": true,
+    "autopilot_continuation_prefix": "You have not yet marked the task as complete using the task_complete tool.",
+    "general_purpose_child_has_separate_session_id": true,
+    "general_purpose_child_prompt_equals_task_prompt": true,
+    "general_purpose_child_session_start_emitted": false,
+    "general_purpose_child_agent_stop_emitted": true,
+    "new_file_newline": "CRLF",
+    "edit_preserves_existing_newline": true
+  },
+  "file_calls": [
+    {
+      "toolName": "create",
+      "toolArgs": {
+        "path": "{cwd}\\live.md",
+        "file_text": "The server must retain the record.\n"
+      }
+    },
+    {
+      "toolName": "edit",
+      "toolArgs": {
+        "path": "{cwd}\\live.md",
+        "old_str": "The server must retain the record.",
+        "new_str": "The server must retain the message."
+      }
+    },
+    {
+      "toolName": "apply_patch",
+      "toolArgs": "*** Begin Patch\n*** Add File: child.md\n+The client must send the request.\n*** End Patch\n"
+    },
+    {
+      "toolName": "apply_patch",
+      "toolArgs": "*** Begin Patch\n*** Update File: live.md\n@@\n-The server must retain the message.\n+The server must retain the record.\n*** End Patch\n"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [],
+    "userPromptSubmitted": [],
+    "preToolUse": [],
+    "postToolUse": [],
+    "postToolUseFailure": [],
+    "agentStop": [],
+    "subagentStop": []
+  },
+  "commandTemplate": {
+    "type": "command",
+    "exec": "__PYTHON__",
+    "args": [
+      "-I",
+      "-m",
+      "lingity.copilot_hook",
+      "--event",
+      "__EVENT__",
+      "--state-dir",
+      "__STATE_ROOT__",
+      "--timeout-seconds",
+      "40"
+    ],
+    "cwd": "__RUNTIME_ROOT__",
+    "env": {
+      "NLTK_DATA": "__CORPUS_ROOT__"
+    },
+    "timeoutSec": 60
+  }
+}

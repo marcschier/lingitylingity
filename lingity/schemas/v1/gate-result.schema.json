@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lingity.dev/schemas/v1/gate-result.schema.json",
+  "title": "Lingity absolute authoring gate result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "accepted", "violations", "violation_count", "violations_truncated", "scores", "coverage", "identities", "candidate_sha256", "baseline_sha256", "projected_sha256", "baseline_projected_sha256", "protected_delta", "critique"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "kind": {"const": "lingity.gate-result.v1"},
+    "accepted": {"type": "boolean"},
+    "violations": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/violation"}},
+    "violation_count": {"type": "integer", "minimum": 0},
+    "violations_truncated": {"type": "boolean"},
+    "candidate_sha256": {"$ref": "#/$defs/sha256"},
+    "baseline_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "projected_sha256": {"$ref": "#/$defs/sha256"},
+    "baseline_projected_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "scores": {
+      "type": "object", "additionalProperties": false,
+      "required": ["document", "baseline_document", "blocks", "minimum_document_hri", "minimum_block_hri"],
+      "properties": {
+        "document": {"anyOf": [{"$ref": "#/$defs/hri"}, {"type": "null"}]},
+        "baseline_document": {"anyOf": [{"$ref": "#/$defs/hri"}, {"type": "null"}]},
+        "minimum_document_hri": {"$ref": "#/$defs/hri"},
+        "minimum_block_hri": {"$ref": "#/$defs/hri"},
+        "blocks": {"type": "array", "maxItems": 256, "items": {
+          "type": "object", "additionalProperties": false, "required": ["unit", "value", "location"],
+          "properties": {"unit": {"type": "string"}, "value": {"$ref": "#/$defs/hri"}, "location": {"$ref": "#/$defs/location"}}
+        }}
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["projection_version", "unresolved_lines", "uncovered_lines", "substantive_units", "projected_characters", "units", "exclusions", "tables", "units_count", "units_truncated", "exclusions_count", "exclusions_truncated", "tables_count", "tables_truncated"],
+      "properties": {
+        "projection_version": {"const": "1.0.0"},
+        "unresolved_lines": {"type": "integer", "minimum": 0},
+        "uncovered_lines": {"type": "integer", "minimum": 0},
+        "substantive_units": {"type": "integer", "minimum": 0},
+        "projected_characters": {"type": "integer", "minimum": 0},
+        "units": {"type": "array", "maxItems": 256},
+        "exclusions": {"type": "array", "maxItems": 256},
+        "tables": {"type": "array", "maxItems": 256},
+        "units_count": {"type": "integer", "minimum": 0},
+        "units_truncated": {"type": "boolean"},
+        "exclusions_count": {"type": "integer", "minimum": 0},
+        "exclusions_truncated": {"type": "boolean"},
+        "tables_count": {"type": "integer", "minimum": 0},
+        "tables_truncated": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "identities": {
+      "type": "object",
+      "required": ["gate_version", "projection_version", "text_normalization", "analyzer_version", "profile", "policy", "policy_sha256", "linguistic_model", "parser", "python", "runtime", "wordnet_sha256", "code_sha256", "cache_identity"],
+      "properties": {
+        "gate_version": {"type": "string"}, "projection_version": {"type": "string"},
+        "text_normalization": {"const": "universal-newlines"},
+        "analyzer_version": {"type": "string"}, "profile": {"type": "object"},
+        "policy": {"type": "object"}, "policy_sha256": {"$ref": "#/$defs/sha256"},
+        "linguistic_model": {"type": "object"}, "parser": {"type": "object"},
+        "python": {"type": "string"}, "runtime": {"type": "object"},
+        "wordnet_sha256": {"$ref": "#/$defs/sha256"}, "code_sha256": {"$ref": "#/$defs/sha256"},
+        "cache_identity": {"$ref": "#/$defs/sha256"}
+      },
+      "additionalProperties": false
+    },
+    "protected_delta": {
+      "type": "object", "additionalProperties": false,
+      "required": ["disposition", "missing", "added", "unresolved", "specified", "tables", "counts", "truncated"],
+      "properties": {
+        "disposition": {"enum": ["not_compared", "unchanged", "equivalent", "changed", "unresolved"]},
+        "missing": {"$ref": "#/$defs/deltaItems"}, "added": {"$ref": "#/$defs/deltaItems"},
+        "unresolved": {"$ref": "#/$defs/deltaItems"}, "specified": {"$ref": "#/$defs/deltaItems"},
+        "tables": {"type": "array", "maxItems": 64, "items": {
+          "type": "object", "additionalProperties": false, "required": ["unit", "location", "comparison"],
+          "properties": {"unit": {"type": "string"}, "location": {"$ref": "#/$defs/location"}, "comparison": {"type": "object"}}
+        }},
+        "counts": {"type": "object", "required": ["missing", "added", "unresolved", "specified", "tables"], "additionalProperties": {"type": "integer", "minimum": 0}},
+        "truncated": {"type": "boolean"}
+      }
+    },
+    "critique": {
+      "type": "object", "additionalProperties": false,
+      "required": ["defects", "defect_count", "truncated", "absolute_policy", "untrusted_document_data"],
+      "properties": {
+        "defects": {"type": "array", "maxItems": 64, "items": {"type": "object", "required": ["rule_id", "severity", "location", "excerpt"], "properties": {"location": {"$ref": "#/$defs/location"}}}},
+        "defect_count": {"type": "integer", "minimum": 0},
+        "truncated": {"type": "boolean"},
+        "analysis_sha256": {"$ref": "#/$defs/sha256"},
+        "must_preserve": {"type": "array", "maxItems": 64},
+        "must_preserve_count": {"type": "integer", "minimum": 0},
+        "must_preserve_truncated": {"type": "boolean"},
+        "absolute_policy": {
+          "type": "object", "additionalProperties": false,
+          "required": ["minimum_document_hri", "minimum_block_hri", "maximum_high_severity_findings", "violations", "violation_count"],
+          "properties": {
+            "minimum_document_hri": {"type": "number", "minimum": 85, "maximum": 100},
+            "minimum_block_hri": {"type": "number", "minimum": 85, "maximum": 100},
+            "maximum_high_severity_findings": {"const": 0},
+            "violations": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/violation"}},
+            "violation_count": {"type": "integer", "minimum": 0}
+          }
+        },
+        "untrusted_document_data": {"const": true}
+      }
+    }
+  },
+  "allOf": [{
+    "if": {"properties": {"accepted": {"const": true}}},
+    "then": {"properties": {
+      "violation_count": {"const": 0}, "violations": {"maxItems": 0},
+      "scores": {"properties": {"document": {"type": "number", "minimum": 85}}},
+      "coverage": {"properties": {"unresolved_lines": {"const": 0}, "uncovered_lines": {"const": 0}, "substantive_units": {"minimum": 1}}}
+    }},
+    "else": {"properties": {"violation_count": {"minimum": 1}}}
+  }],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "hri": {"type": "number", "minimum": 0, "maximum": 100},
+    "deltaItems": {"type": "array", "maxItems": 64, "items": {"type": "string"}},
+    "location": {
+      "type": "object", "required": ["start", "end", "line", "column"],
+      "properties": {
+        "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0},
+        "line": {"type": "integer", "minimum": 1}, "column": {"type": "integer", "minimum": 1},
+        "unit": {"type": "string"}, "table": {"type": "integer", "minimum": 1},
+        "row": {"type": "integer", "minimum": 1}, "cell": {"type": "integer", "minimum": 1},
+        "header": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "violation": {
+      "type": "object", "required": ["code", "message", "location"],
+      "properties": {"code": {"type": "string"}, "message": {"type": "string"}, "location": {"$ref": "#/$defs/location"}}
+    }
+  }
+}

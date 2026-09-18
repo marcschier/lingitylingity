@@ -144,9 +144,16 @@ NLTK's path sandbox for containment. This is an applicability assessment, not
 a clean dependency scan or a claim that NLTK is vulnerability-free. Audit the
 resolved dependency set before deployment.
 
-The [Windows specification-authoring gate design](docs/specification-authoring-gate.md)
-defines absolute acceptance criteria, autonomous repair, last-resort user
-options, and the limits of machine-wide hook enforcement.
+The [Windows Markdown authoring gate](docs/specification-authoring-gate.md)
+adds absolute acceptance checks and user-level Copilot hooks. It covers all
+authored Markdown, including table prose. It freezes the first complete draft
+for each requested revision, returns repair feedback, and reserves wording
+options for genuine unresolved decisions. Hooks provide cooperative authoring
+checks, not operating-system write protection.
+
+The [operator guide](integrations/copilot/README.md) lists the repository
+components. It explains how to disable or re-enable the hook and change its
+thresholds. The active hook uses installed policy defaults, not repo settings.
 
 ## CLI
 
@@ -157,6 +164,9 @@ lingity verify analysis.json
 lingity critique review.md --output brief.json
 lingity judge review.md --candidate rewrite.md
 lingity improve review.md --provider subagent --candidate rewrite.md
+
+lingity gate check review.md
+lingity gate check rewrite.md --baseline first-draft.md --output gate-result.json
 ```
 
 `analyze` emits a deterministic, schema-valid JSON artifact containing located
@@ -332,7 +342,8 @@ python -m mypy
 python -m compileall -q lingity tests
 ```
 
-These are the commands CI runs, in this order, on Python 3.11 and 3.12, for
+CI runs these commands in this order on Ubuntu with Python 3.11, 3.12, and 3.13.
+It also runs them on Windows with Python 3.13, for
 every push to `main` and every pull request; see `.github/workflows/ci.yml`.
 `tests/test_documentation.py` compares this block against the workflow and fails
 if the two diverge. The command strings are identical; CI differs only in when

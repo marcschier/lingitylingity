@@ -179,6 +179,25 @@ A drift challenger may only *raise* doubt. It can block an acceptance, but it
 can never clear a deterministic failure, and an unparseable challenge response
 is an error rather than a quiet `no_material_change`.
 
+## Markdown authoring
+
+`lingity gate check document.md` applies the pinned absolute standard:
+document and substantive-block HRI >=85, no high-severity findings, and full
+supported prose coverage. It includes table cells. Use `--baseline draft.md`
+to check repairs against the first complete draft. A passing unchanged draft
+does not need a pointless rewrite.
+
+The [Copilot integration](docs/specification-authoring-gate.md) preserves
+drafts across retries and child agents. Models repair decisive defects
+autonomously and choose among passing equivalent formulations. They present
+options only when a missing fact or authority prevents a supported choice.
+Tool failures and exhausted retries remain explicit blockers, not questions
+about style. Local hooks do not prevent arbitrary writes by other programs.
+
+For hook disable/re-enable steps or threshold changes, the
+[operator guide](integrations/copilot/README.md) defines the supported paths.
+The hook uses installed policy defaults, not a repository override.
+
 ## Development
 
 ```text
@@ -190,7 +209,8 @@ python -m mypy
 python -m compileall -q lingity tests
 ```
 
-These are the commands CI runs, in this order, on Python 3.11 and 3.12, for
+CI runs these commands in this order on Ubuntu with Python 3.11, 3.12, and 3.13.
+It also runs them on Windows with Python 3.13, for
 every push to `main` and every pull request; see `.github/workflows/ci.yml`.
 `tests/test_documentation.py` compares this block against the workflow and fails
 if the two diverge. The command strings are identical; CI differs only in when
