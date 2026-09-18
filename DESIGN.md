@@ -165,6 +165,22 @@ protected concepts against literal phrases copied from the test fixture. The
 fixture passed, but the gate understood nothing. Those patterns were removed
 and the gate rebuilt on the parse.
 
+Analyzer 1.6.0 removes the predicate exclusions for `use`, `propose`, and
+`treat`. Those exclusions erased their actors and targets; a modal token could
+then satisfy sentence coverage while the requirement itself changed. The
+extractor now records those claims and retains argument complements and
+restrictive modifiers. A complement remains bound to its governing predicate
+even when it also has its own claim: swapping what is proposed and what is
+rejected must change the signature. Punctuation-separated independent clauses
+are represented on their own rather than swallowed by an adjacent target.
+
+This intentionally rejects some paraphrases accepted by older analyzers.
+For example, a proposal is not silently discarded to match a direct directive,
+and `treat` is not assumed equivalent to `use`. The accepted recommendation
+fixture now retains the disputed claims and improves sentence structure.
+Its separate `unchecked_linguistic_rewrite` demonstrates that a larger
+readability gain still cannot authorize a semantic change.
+
 The comparison is deliberately directional. Naming an actor the source left
 unnamed is a permitted specification and is reported under `specified` —
 otherwise the remediation `LING-AGENCY-001` itself recommends would be
@@ -564,4 +580,3 @@ draft -> analyzed -> improving -> selected
 - Optimizing text solely to maximize one aggregate score
 - Editing canonical architecture or governance records
 - Hiding failed attempts or model uncertainty
-

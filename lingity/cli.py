@@ -290,6 +290,43 @@ def _improve(args: argparse.Namespace) -> int:
         return 2
 
 
+def _gate_check(args: argparse.Namespace) -> int:
+    from lingity.gate import GatePolicy, evaluate_document
+
+    path = cast(Path, args.input)
+    baseline = cast(Path | None, args.baseline)
+    output = cast(Path | None, args.output)
+    try:
+        _reject_input_output_alias(path, output)
+        if baseline is not None:
+            _reject_input_output_alias(baseline, output)
+        _remove_stale_output(output)
+        policy = GatePolicy()
+        with path.open("rb") as stream:
+            candidate_bytes = stream.read(policy.max_input_bytes + 1)
+        baseline_bytes = None
+        if baseline is not None:
+            with baseline.open("rb") as stream:
+                baseline_bytes = stream.read(policy.max_input_bytes + 1)
+        result = evaluate_document(candidate_bytes, baseline_bytes, policy)
+        document = result.to_dict()
+        Draft202012Validator(_schema("gate-result.schema.json")).validate(document)
+        _write_json(document, output)
+        return 0 if result.accepted else 1
+    except CLI_ERRORS as exc:
+        print(f"lingity gate check failed: {exc}", file=sys.stderr)
+        return 2
+
+
+def _gate_hook(args: argparse.Namespace) -> int:
+    from lingity.copilot_hook import main as hook_main
+
+    options = ["--event", str(args.event), "--timeout-seconds", str(args.timeout_seconds)]
+    if args.state_dir is not None:
+        options.extend(["--state-dir", str(args.state_dir)])
+    return hook_main(options)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="lingity")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -344,6 +381,22 @@ def build_parser() -> argparse.ArgumentParser:
     improve.add_argument("--challenge-model", dest="challenge_model")
     improve.add_argument("--output", type=Path)
     improve.set_defaults(handler=_improve)
+
+    gate = subparsers.add_parser("gate", help="enforce the pinned Markdown authoring standard")
+    gate_commands = gate.add_subparsers(dest="gate_command", required=True)
+    check = gate_commands.add_parser("check", help="check absolute quality and optional draft preservation")
+    check.add_argument("input", type=Path)
+    check.add_argument("--baseline", type=Path)
+    check.add_argument("--output", type=Path)
+    check.set_defaults(handler=_gate_check)
+    hook = gate_commands.add_parser("hook", help="handle one Copilot JSON hook event")
+    hook.add_argument("--event", required=True, choices=[
+        "sessionStart", "userPromptSubmitted", "preToolUse", "postToolUse",
+        "postToolUseFailure", "agentStop", "subagentStop",
+    ])
+    hook.add_argument("--state-dir", type=Path)
+    hook.add_argument("--timeout-seconds", type=float, default=40.0)
+    hook.set_defaults(handler=_gate_hook)
     return parser
 
 
